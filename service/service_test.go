@@ -159,7 +159,7 @@ func (s *ProcessAsyncSuite) TestProcessAsync_Error() {
 	s.mockProcessor.EXPECT().Func1(s.testValue).Return(s.testError).Once().Run(func(args mock.Arguments) {
 		wg.Done()
 	})
-	s.mockProcessor.EXPECT().Func2(s.testValue).Return(nil).Once().Run(func(args mock.Arguments) {
+	s.mockProcessor.EXPECT().Func2(s.testValue).Return(s.testError).Once().Run(func(args mock.Arguments) {
 		wg.Done()
 	})
 
@@ -180,7 +180,7 @@ func (s *ProcessAsyncSuite) TestProcessAsync_WithNegativeValue() {
 	s.mockProcessor.EXPECT().Func1(negativeValue).Return(expectedErr).Once().Run(func(args mock.Arguments) {
 		wg.Done()
 	})
-	s.mockProcessor.EXPECT().Func2(negativeValue).Return(nil).Once().Run(func(args mock.Arguments) {
+	s.mockProcessor.EXPECT().Func2(negativeValue).Return(expectedErr).Once().Run(func(args mock.Arguments) {
 		wg.Done()
 	})
 
