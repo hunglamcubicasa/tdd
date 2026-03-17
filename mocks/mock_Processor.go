@@ -63,6 +63,52 @@ func (_c *MockProcessor_Func1_Call) RunAndReturn(run func(int) error) *MockProce
 	return _c
 }
 
+// Func2 provides a mock function with given fields: value
+func (_m *MockProcessor) Func2(value int) error {
+	ret := _m.Called(value)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Func2")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(int) error); ok {
+		r0 = rf(value)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockProcessor_Func2_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Func2'
+type MockProcessor_Func2_Call struct {
+	*mock.Call
+}
+
+// Func2 is a helper method to define mock.On call
+//   - value int
+func (_e *MockProcessor_Expecter) Func2(value interface{}) *MockProcessor_Func2_Call {
+	return &MockProcessor_Func2_Call{Call: _e.mock.On("Func2", value)}
+}
+
+func (_c *MockProcessor_Func2_Call) Run(run func(value int)) *MockProcessor_Func2_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(int))
+	})
+	return _c
+}
+
+func (_c *MockProcessor_Func2_Call) Return(_a0 error) *MockProcessor_Func2_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockProcessor_Func2_Call) RunAndReturn(run func(int) error) *MockProcessor_Func2_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // NewMockProcessor creates a new instance of MockProcessor. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewMockProcessor(t interface {

@@ -18,3 +18,12 @@ func (p *ProcessorImpl) Func1(value int) error {
 	// Simulate some processing
 	return nil
 }
+
+// Func2 processes the given value
+func (p *ProcessorImpl) Func2(value int) error {
+	if value < 0 {
+		return fmt.Errorf("invalid value: %d", value)
+	}
+	// Simulate some processing
+	return nil
+}

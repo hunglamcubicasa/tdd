@@ -26,4 +26,8 @@ func (s *Service) ProcessAsync(value int) {
 	go func() {
 		_ = s.processor.Func1(value)
 	}()
+
+	go func() {
+		_ = s.processor.Func2(value)
+	}()
 }

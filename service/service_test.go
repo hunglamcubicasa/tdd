@@ -2,8 +2,8 @@ package service
 
 import (
 	"errors"
+	"sync"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
@@ -134,84 +134,81 @@ func (s *ProcessAsyncSuite) TearDownTest() {
 // TestProcessAsync_Success tests successful asynchronous processing
 func (s *ProcessAsyncSuite) TestProcessAsync_Success() {
 	// Arrange
-	done := make(chan bool, 1)
+	var wg sync.WaitGroup
+	wg.Add(2)
+
 	s.mockProcessor.EXPECT().Func1(s.testValue).Return(nil).Once().Run(func(args mock.Arguments) {
-		done <- true
+		wg.Done()
+	})
+	s.mockProcessor.EXPECT().Func2(s.testValue).Return(nil).Once().Run(func(args mock.Arguments) {
+		wg.Done()
 	})
 
 	// Act
 	s.service.ProcessAsync(s.testValue)
 
-	// Assert - wait for goroutine to complete
-	select {
-	case <-done:
-		// Success
-	case <-time.After(1 * time.Second):
-		s.Fail("ProcessAsync did not call Func1 within timeout")
-	}
+	// Assert
+	wg.Wait()
 }
 
 // TestProcessAsync_Error tests error handling in asynchronous processing
 func (s *ProcessAsyncSuite) TestProcessAsync_Error() {
 	// Arrange
-	done := make(chan bool, 1)
+	var wg sync.WaitGroup
+	wg.Add(2)
 	s.mockProcessor.EXPECT().Func1(s.testValue).Return(s.testError).Once().Run(func(args mock.Arguments) {
-		done <- true
+		wg.Done()
+	})
+	s.mockProcessor.EXPECT().Func2(s.testValue).Return(nil).Once().Run(func(args mock.Arguments) {
+		wg.Done()
 	})
 
 	// Act
 	s.service.ProcessAsync(s.testValue)
 
-	// Assert - wait for goroutine to complete
-	select {
-	case <-done:
-		// Success - error is ignored in fire-and-forget
-	case <-time.After(1 * time.Second):
-		s.Fail("ProcessAsync did not call Func1 within timeout")
-	}
+	// Assert
+	wg.Wait()
 }
 
 // TestProcessAsync_WithNegativeValue tests async processing with negative value
 func (s *ProcessAsyncSuite) TestProcessAsync_WithNegativeValue() {
 	// Arrange
 	negativeValue := s.expectedData["failure"]
-	done := make(chan bool, 1)
+	var wg sync.WaitGroup
+	wg.Add(2)
 	expectedErr := errors.New("invalid value")
 	s.mockProcessor.EXPECT().Func1(negativeValue).Return(expectedErr).Once().Run(func(args mock.Arguments) {
-		done <- true
+		wg.Done()
+	})
+	s.mockProcessor.EXPECT().Func2(negativeValue).Return(nil).Once().Run(func(args mock.Arguments) {
+		wg.Done()
 	})
 
 	// Act
 	s.service.ProcessAsync(negativeValue)
 
-	// Assert - wait for goroutine to complete
-	select {
-	case <-done:
-		// Success - error is ignored in fire-and-forget
-	case <-time.After(1 * time.Second):
-		s.Fail("ProcessAsync did not call Func1 within timeout")
-	}
+	// Assert
+	wg.Wait()
 }
 
 // TestProcessAsync_WithSuccessValue tests async processing with success value
 func (s *ProcessAsyncSuite) TestProcessAsync_WithSuccessValue() {
 	// Arrange
 	successValue := s.expectedData["success"]
-	done := make(chan bool, 1)
+	var wg sync.WaitGroup
+	wg.Add(2)
 	s.mockProcessor.EXPECT().Func1(successValue).Return(nil).Once().Run(func(args mock.Arguments) {
-		done <- true
+		wg.Done()
+	})
+	s.mockProcessor.EXPECT().Func2(successValue).Return(nil).Once().Run(func(args mock.Arguments) {
+		wg.Done()
 	})
 
 	// Act
 	s.service.ProcessAsync(successValue)
 
-	// Assert - wait for goroutine to complete
-	select {
-	case <-done:
-		// Success
-	case <-time.After(1 * time.Second):
-		s.Fail("ProcessAsync did not call Func1 within timeout")
-	}
+	// Assert
+	wg.Wait()
 }
 
 // TestProcessSyncSuite runs the ProcessSyncSuite
