@@ -53,57 +53,52 @@ func (s *ProcessSyncSuite) TearDownTest() {
 	s.service = nil
 }
 
-// TestProcessSync_Success tests successful synchronous processing
-func (s *ProcessSyncSuite) TestProcessSync_Success() {
-	// Arrange
-	s.mockProcessor.EXPECT().Func1(s.testValue).Return(nil).Once()
+func (s *ProcessSyncSuite) TestProcessSync_SuccessCases() {
+	testCases := []struct {
+		name  string
+		value int
+	}{
+		{name: "default value", value: s.testValue},
+		{name: "success value", value: s.expectedData["success"]},
+	}
 
-	// Act
-	err := s.service.ProcessSync(s.testValue)
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			s.mockProcessor = foo.NewMockProcessor(s.T())
+			s.service = NewService(s.mockProcessor)
 
-	// Assert
-	s.NoError(err)
+			s.mockProcessor.EXPECT().Func1(tc.value).Return(nil).Once()
+
+			err := s.service.ProcessSync(tc.value)
+
+			s.NoError(err)
+		})
+	}
 }
 
-// TestProcessSync_Error tests error handling in synchronous processing
-func (s *ProcessSyncSuite) TestProcessSync_Error() {
-	// Arrange
-	s.mockProcessor.EXPECT().Func1(s.testValue).Return(s.testError).Once()
+func (s *ProcessSyncSuite) TestProcessSync_FailureCases() {
+	testCases := []struct {
+		name        string
+		value       int
+		returnError error
+	}{
+		{name: "processor returns error", value: s.testValue, returnError: s.testError},
+		{name: "negative value", value: s.expectedData["failure"], returnError: errors.New("invalid value")},
+	}
 
-	// Act
-	err := s.service.ProcessSync(s.testValue)
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			s.mockProcessor = foo.NewMockProcessor(s.T())
+			s.service = NewService(s.mockProcessor)
 
-	// Assert
-	s.Error(err)
-	s.Equal(s.testError, err)
-}
+			s.mockProcessor.EXPECT().Func1(tc.value).Return(tc.returnError).Once()
 
-// TestProcessSync_WithNegativeValue tests processing with negative value
-func (s *ProcessSyncSuite) TestProcessSync_WithNegativeValue() {
-	// Arrange
-	negativeValue := s.expectedData["failure"]
-	expectedErr := errors.New("invalid value")
-	s.mockProcessor.EXPECT().Func1(negativeValue).Return(expectedErr).Once()
+			err := s.service.ProcessSync(tc.value)
 
-	// Act
-	err := s.service.ProcessSync(negativeValue)
-
-	// Assert
-	s.Error(err)
-	s.Equal(expectedErr, err)
-}
-
-// TestProcessSync_WithSuccessValue tests processing with success value
-func (s *ProcessSyncSuite) TestProcessSync_WithSuccessValue() {
-	// Arrange
-	successValue := s.expectedData["success"]
-	s.mockProcessor.EXPECT().Func1(successValue).Return(nil).Once()
-
-	// Act
-	err := s.service.ProcessSync(successValue)
-
-	// Assert
-	s.NoError(err)
+			s.Error(err)
+			s.Equal(tc.returnError, err)
+		})
+	}
 }
 
 // ProcessAsyncSuite tests the ProcessAsync function
@@ -131,84 +126,59 @@ func (s *ProcessAsyncSuite) TearDownTest() {
 	s.service = nil
 }
 
-// TestProcessAsync_Success tests successful asynchronous processing
-func (s *ProcessAsyncSuite) TestProcessAsync_Success() {
-	// Arrange
-	var wg sync.WaitGroup
-	wg.Add(2)
+func (s *ProcessAsyncSuite) TestProcessAsync_SuccessCases() {
+	testCases := []struct {
+		name  string
+		value int
+	}{
+		{name: "default value", value: s.testValue},
+		{name: "success value", value: s.expectedData["success"]},
+	}
 
-	s.mockProcessor.EXPECT().Func1(s.testValue).Return(nil).Once().Run(func(args mock.Arguments) {
-		wg.Done()
-	})
-	s.mockProcessor.EXPECT().Func2(s.testValue).Return(nil).Once().Run(func(args mock.Arguments) {
-		wg.Done()
-	})
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			s.mockProcessor = foo.NewMockProcessor(s.T())
+			s.service = NewService(s.mockProcessor)
 
-	// Act
-	s.service.ProcessAsync(s.testValue)
+			var wg sync.WaitGroup
+			wg.Add(2)
 
-	// Assert
-	wg.Wait()
+			s.mockProcessor.EXPECT().Func1(tc.value).Return(nil).Once().Run(func(args mock.Arguments) { wg.Done() })
+			s.mockProcessor.EXPECT().Func2(tc.value).Return(nil).Once().Run(func(args mock.Arguments) { wg.Done() })
+
+			s.service.ProcessAsync(tc.value)
+
+			wg.Wait()
+		})
+	}
 }
 
-// TestProcessAsync_Error tests error handling in asynchronous processing
-func (s *ProcessAsyncSuite) TestProcessAsync_Error() {
-	// Arrange
-	var wg sync.WaitGroup
-	wg.Add(2)
-	s.mockProcessor.EXPECT().Func1(s.testValue).Return(s.testError).Once().Run(func(args mock.Arguments) {
-		wg.Done()
-	})
-	s.mockProcessor.EXPECT().Func2(s.testValue).Return(s.testError).Once().Run(func(args mock.Arguments) {
-		wg.Done()
-	})
+func (s *ProcessAsyncSuite) TestProcessAsync_FailureCases() {
+	testCases := []struct {
+		name        string
+		value       int
+		returnError error
+	}{
+		{name: "processor returns error", value: s.testValue, returnError: s.testError},
+		{name: "negative value", value: s.expectedData["failure"], returnError: errors.New("invalid value")},
+	}
 
-	// Act
-	s.service.ProcessAsync(s.testValue)
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			s.mockProcessor = foo.NewMockProcessor(s.T())
+			s.service = NewService(s.mockProcessor)
 
-	// Assert
-	wg.Wait()
-}
+			var wg sync.WaitGroup
+			wg.Add(2)
 
-// TestProcessAsync_WithNegativeValue tests async processing with negative value
-func (s *ProcessAsyncSuite) TestProcessAsync_WithNegativeValue() {
-	// Arrange
-	negativeValue := s.expectedData["failure"]
-	var wg sync.WaitGroup
-	wg.Add(2)
-	expectedErr := errors.New("invalid value")
-	s.mockProcessor.EXPECT().Func1(negativeValue).Return(expectedErr).Once().Run(func(args mock.Arguments) {
-		wg.Done()
-	})
-	s.mockProcessor.EXPECT().Func2(negativeValue).Return(expectedErr).Once().Run(func(args mock.Arguments) {
-		wg.Done()
-	})
+			s.mockProcessor.EXPECT().Func1(tc.value).Return(tc.returnError).Once().Run(func(args mock.Arguments) { wg.Done() })
+			s.mockProcessor.EXPECT().Func2(tc.value).Return(tc.returnError).Once().Run(func(args mock.Arguments) { wg.Done() })
 
-	// Act
-	s.service.ProcessAsync(negativeValue)
+			s.service.ProcessAsync(tc.value)
 
-	// Assert
-	wg.Wait()
-}
-
-// TestProcessAsync_WithSuccessValue tests async processing with success value
-func (s *ProcessAsyncSuite) TestProcessAsync_WithSuccessValue() {
-	// Arrange
-	successValue := s.expectedData["success"]
-	var wg sync.WaitGroup
-	wg.Add(2)
-	s.mockProcessor.EXPECT().Func1(successValue).Return(nil).Once().Run(func(args mock.Arguments) {
-		wg.Done()
-	})
-	s.mockProcessor.EXPECT().Func2(successValue).Return(nil).Once().Run(func(args mock.Arguments) {
-		wg.Done()
-	})
-
-	// Act
-	s.service.ProcessAsync(successValue)
-
-	// Assert
-	wg.Wait()
+			wg.Wait()
+		})
+	}
 }
 
 // TestProcessSyncSuite runs the ProcessSyncSuite
